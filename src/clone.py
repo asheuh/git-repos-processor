@@ -4,6 +4,7 @@ imports
 """
 import subprocess
 import os
+import pdb
 import click
 from functools import reduce
 
@@ -20,9 +21,15 @@ def clone_repos_from_file(filename):
     if os.path.exists(filename):
         with open(filename, 'rb') as f:
             try:
+                counter = 0
                 content = f.readlines()
-                reduce(lambda _, b: clone_it(f'git clone {b}'), 
-                        map(lambda repo: repo.decode("utf-8"), content))
+                repo_array = list(map(lambda repo: 'git clone ' + repo.decode("utf-8"), content))
+                iterator = iter(repo_array)
+                while counter < len(repo_array):
+                    clone_it(next(iterator))
+                    counter += 1
+#                 reduce(lambda _, b: clone_it(f'git clone {b}'), 
+#                         map(lambda repo: repo.decode("utf-8"), content))
             except Exception as e:
                 print(e)
 
