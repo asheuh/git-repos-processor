@@ -12,24 +12,34 @@ from functools import reduce
 def cli():
     pass
 
+def repo_generator(array):
+    """
+    generator implementation to help clone repo 
+    one by one
+    """
+    for item in array:
+        yield f'git clone {item.decode("utf-8")}'
+
+
 @click.command('file')
 @click.argument('filename')
 def clone_repos_from_file(filename):
     """
     clone repos from a specified txt file
+    : an alternative code
+    repo_array = list(map(lambda repo: 'git clone ' + repo.decode("utf-8"), content))
+    iterator = iter(repo_array)
+    reduce(lambda _, b: clone_it(f'git clone {b}'), map(lambda repo: repo.decode("utf-8"), content))
     """
     if os.path.exists(filename):
         with open(filename, 'rb') as f:
             try:
                 counter = 0
                 content = f.readlines()
-                repo_array = list(map(lambda repo: 'git clone ' + repo.decode("utf-8"), content))
-                iterator = iter(repo_array)
-                while counter < len(repo_array):
-                    clone_it(next(iterator))
+                generator = repo_generator(content) # creating and initializing a python generator
+                while counter < len(content):
+                    clone_it(next(generator))
                     counter += 1
-#                 reduce(lambda _, b: clone_it(f'git clone {b}'), 
-#                         map(lambda repo: repo.decode("utf-8"), content))
             except Exception as e:
                 print(e)
 
