@@ -11,7 +11,7 @@ class RepoStatistics:
         self.repository = repository
 
     @classmethod
-    def line_of_code(cls):
+    def lines_of_code(cls):
         """
         to compute the number of lines of python
         code used in the repository
