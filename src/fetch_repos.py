@@ -13,7 +13,7 @@ import concurrent.futures
 from typing import Generator
 
 # internal modules
-from repo_stats import RepoStatistics
+from process_repos import RepoStatistics
 
 
 def create_git_command(urls: list) -> Generator[str, None, None]:
@@ -78,10 +78,13 @@ def start_process(filename: str, threads: int):
     """
     run the process
     """
+    t1 = time.perf_counter()
     with concurrent.futures.ThreadPoolExecutor(int(threads)) as executor:
         event_loop = asyncio.get_event_loop()
         event_loop.run_until_complete(run_blocking_tasks(filename, executor))
+    t2 = time.perf_counter()
 
+    print(f"Finished cloning in {t2-t1} second(s)")
 
 @click.group()
 def cli(): pass
