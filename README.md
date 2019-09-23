@@ -1,4 +1,4 @@
-# repos clone script
+# git repos processor
 
 ## Application installation
 
@@ -19,12 +19,7 @@ $ pip install -r requirements.txt
 
 - Clone from file
 ```
-$ python clone.py file repos.txt
-```
-
-- Clone user repos
-```
-$ python clone user your-github-username
+$ python clone.py file {filename_with_repo_links}
 ```
 
 - For help

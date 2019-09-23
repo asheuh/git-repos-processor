@@ -5,26 +5,25 @@ imports
 # external modules
 import subprocess
 import os
+import asyncio
 import click
 import time
 import concurrent.futures
 
-from multiprocessing import Pool
-from functools import lru_cache
 from typing import Generator
 
 # internal modules
 from repo_stats import RepoStatistics
 
 
-def create_git_command(urls_list: list) -> Generator[str, None, None]:
+def create_git_command(urls: list) -> Generator[str, None, None]:
     """
     For each repository from the list of repo urls
     produce a git clone command and return
     :params: list of urls
     :return: generator
     """
-    for url in urls_list:
+    for url in urls:
         yield f'git clone {url.decode("utf-8")}'
 
 
@@ -62,6 +61,15 @@ def process_command(command):
         return output
     return None
 
+async def run_blocking_tasks(filename, executor):
+    loop = asyncio.get_event_loop()
+    blocking_tasks = [
+            loop.run_in_executor(executor, process_command, command)
+            for command in generate_git_commands(filename)
+            ]
+    completed, pending = await asyncio.wait(blocking_tasks)
+    results = [t.result() for t in completed]
+
 
 @click.command()
 @click.argument('threads')
@@ -70,12 +78,10 @@ def start_process(filename: str, threads: int):
     """
     run the process
     """
-    t1 = time.perf_counter()
     with concurrent.futures.ThreadPoolExecutor(int(threads)) as executor:
-        executor.map(process_command, generate_git_commands(filename))
-    t2 = time.perf_counter()
+        event_loop = asyncio.get_event_loop()
+        event_loop.run_until_complete(run_blocking_tasks(filename, executor))
 
-    print(f"Finished cloning in {t2-t1} second(s)")
 
 @click.group()
 def cli(): pass
