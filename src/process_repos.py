@@ -2,6 +2,7 @@
 imports
 """
 import os
+import re
 import time
 
 
@@ -10,30 +11,51 @@ class RepoStatistics:
     Computes certain statistics only for python code present
     in each github repository
     """
-    def __init__(self, repository):
-        self.repository = repository
+    def __init__(self, directory):
+        self.directory = directory
 
-    def lines_of_code(self):
+    def repository(self):
+        """
+        get all the repositories in a directory
+        """
+        dir_list = []
+        if os.path.isdir(self.directory):
+            for dirname in os.listdir(self.directory):
+                dir_list.append(dirname)
+        return dir_list
+
+    def perform_computation(self):
         """
         to compute the number of lines of python
         code used in the repository
         (excludes comments, whitespaces, blank lines)
         TODO: Optimize this method to consider complexity
         """
-        ignore_dir = ['.git', '.github']
-        total = 0
-        if os.path.isdir(self.repository):
-            for dir_name, subdir, files in os.walk(self.repository):
-                subdir[:] = [d for d in subdir if d not in ignore_dir]
+
+        repository = self.repository()
+        ignore_dir = ['.git', '.github', '__pycache__']
+        result = []
+
+        for item in repository:
+            total = 0
+            repo = f'cloned-repos/{item}'
+            if os.path.isdir(repo):
+                for dir_name, subdir, files in os.walk(repo):
+                    subdir[:] = [d for d in subdir if d not in ignore_dir]
                 for filename in files:
                     if filename.endswith('.py'):
                         with open(os.path.join(dir_name, filename), 'rb') as f:
                             content = [
                                     line for line in f.readlines()
-                                    if not line.startswith(b'#')
+                                    if not line.startswith(b'#') 
+                                    and not (re.match(b'\r?\n', line))
                                     ]
                             total += len(content)
-        return total
+            result.append(self.to_json(total))
+        return result
+
+    def to_json(self, total_lines):
+        return {'number_of_lines': total_lines}
 
     def external_lib_pkg(self):
         """
@@ -53,9 +75,12 @@ class RepoStatistics:
 
 
 if __name__ == "__main__":
+    import pprint
     start = time.time()
-    REPO = RepoStatistics("Multitask-and-Transfer-Learning")
-    REPO.lines_of_code()
+    REPO = RepoStatistics("cloned-repos")
+    result = REPO.perform_computation()
+
+    pprint.pprint(result)
     elapsed = time.time() - start
 
     print(f'Time taken: {elapsed} seconds')

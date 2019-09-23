@@ -20,10 +20,11 @@ $ pip install -r requirements.txt
 - Clone from file
 ```
 $ mkdir cloned-repos && cd cloned-repos
-$ python ../run_process.py start-process {number_of_threads} {filename_with_repos}
+$ python3 ../run_process.py start-process {number_of_threads} {filename_with_repos}
+$ python3 ../process_repos.py
 ```
 
 - For help
 ```
-$ python run_process.py --help
+$ python ../run_process.py --help
 ```
