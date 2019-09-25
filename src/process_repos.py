@@ -14,16 +14,6 @@ class RepoStatistics:
     def __init__(self, directory):
         self.directory = directory
 
-    def repository(self):
-        """
-        get all the repositories in a directory
-        """
-        dir_list = []
-        if os.path.isdir(self.directory):
-            for dirname in os.listdir(self.directory):
-                dir_list.append(dirname)
-        return dir_list
-
     def perform_computation(self):
         """
         to compute the number of lines of python
@@ -32,38 +22,55 @@ class RepoStatistics:
         TODO: Optimize this method to consider complexity
         """
 
-        repository = self.repository()
+        repository = os.listdir(self.directory)
         ignore_dir = ['.git', '.github', '__pycache__']
         result = []
 
-        for item in repository:
-            total = 0
-            repo = f'cloned-repos/{item}'
-            if os.path.isdir(repo):
-                for dir_name, subdir, files in os.walk(repo):
-                    subdir[:] = [d for d in subdir if d not in ignore_dir]
-                for filename in files:
-                    if filename.endswith('.py'):
-                        with open(os.path.join(dir_name, filename), 'rb') as f:
-                            content = [
-                                    line for line in f.readlines()
-                                    if not line.startswith(b'#') 
-                                    and not (re.match(b'\r?\n', line))
-                                    ]
-                            total += len(content)
-            result.append(self.to_json(total))
+        if os.path.isdir(self.directory):
+            for item in os.listdir(self.directory):
+                total = 0
+                package_list = []
+                repo = f'cloned-repos/{item}'
+                if os.path.isdir(repo):
+                    for dir_name, subdir, files in os.walk(repo):
+                        subdir[:] = [d for d in subdir if d not in ignore_dir]
+                        for filename in files:
+                            if filename.endswith('.py'):
+                                with open(os.path.join(dir_name, filename), 'rb') as f:
+                                    content = [
+                                            line for line in f.readlines()
+                                            if not line.startswith(b'#') 
+                                            and not (re.match(b'\r?\n', line))
+                                            ]
+                                    lib_packages = [
+                                            line for line in content
+                                            if line.startswith((b'import', b'from'))
+                                            ]
+                                    package_list[:] = lib_packages
+                                    total += len(content)
+                libraries = self.external_lib_pkg(package_list)
+                result.append(self.to_json(total, libraries))
         return result
 
-    def to_json(self, total_lines):
-        return {'number_of_lines': total_lines}
+    def to_json(self, total_lines, libraries):
+        data = {
+                'number_of_lines': total_lines,
+                'libraries': libraries
+                }
+        return data
 
-    def external_lib_pkg(self):
+    def generate_list(self, lib_list):
+        for item in lib_list:
+            yield f'{item.decode("utf-8").split()[1]}'
+
+    def external_lib_pkg(self, package_list):
         """
         finds all the libraries/packages used in
         the repository and stores them in a list data
         structure
         """
-        return None
+        generator = self.generate_list(package_list)
+        return list(generator)
 
     def nesting_factor(self):
         """
