@@ -22,7 +22,6 @@ class RepoStatistics:
         TODO: Optimize this method to consider complexity
         """
 
-        repository = os.listdir(self.directory)
         ignore_dir = ['.git', '.github', '__pycache__']
         result = []
 
@@ -30,6 +29,7 @@ class RepoStatistics:
             for item in os.listdir(self.directory):
                 total = 0
                 package_list = []
+                func_definition = []
                 repo = f'cloned-repos/{item}'
                 if os.path.isdir(repo):
                     for dir_name, subdir, files in os.walk(repo):
@@ -47,15 +47,22 @@ class RepoStatistics:
                                             if line.startswith((b'import', b'from'))
                                             ]
                                     package_list[:] = lib_packages
+                                    func_def_list = [
+                                            line.decode('utf-8') for line in content
+                                            if line.startswith(b'def')
+                                            ]
+                                    func_definition[:] = func_def_list
                                     total += len(content)
+                avg_params = self.avg_parameters(func_definition)
                 libraries = self.external_lib_pkg(package_list)
-                result.append(self.to_json(total, libraries))
+                result.append(self.to_json(total, libraries, avg_params))
         return result
 
-    def to_json(self, total_lines, libraries):
+    def to_json(self, total_lines, libraries, avg_params):
         data = {
                 'number_of_lines': total_lines,
-                'libraries': libraries
+                'libraries': libraries,
+                'average_parameters': avg_params
                 }
         return data
 
@@ -78,6 +85,40 @@ class RepoStatistics:
         :this is the average depth of a nested for loop
         throughout the code
         """
+        return None
+
+    def code_duplication(self):
+        """
+        What percentage of the code is duplicated per file.
+        If the same 4 consecutive lines of code (disregarding
+        blank lines, comments, etc. other non code items)
+        appear in multiple places in a file, all the occurrences
+        except the first occurence are considered to be duplicates.
+        """
+        return None
+
+    def avg_parameters(self, func_def_list):
+        """
+        Average number of parameters per
+        function definition in the repository.
+        """
+        total = 0
+        average = None
+        for line in func_def_list:
+            total += len(line.split(','))
+        try:
+            average = total / len(func_def_list)
+        except ZeroDivisionError:
+            average = 0
+        return average
+
+    def avg_variables(self):
+        """
+        Average Number of variables defined
+        per line of code in the repository
+        """
+
+        keywords = ('def', 'for', 'while', 'class', 'return', 'print')
         return None
 
 
